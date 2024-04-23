@@ -24,6 +24,7 @@ class BasePostModel(models.Model):
 
     class Meta:
         abstract = True
+        ordering = ('-pub_date', )
 
 
 class Category(BasePostModel):
@@ -47,6 +48,9 @@ class Location(BasePostModel):
     name = models.CharField(
         verbose_name='Название места',
         max_length=settings.MAX_LENGTH,
+    )
+    is_published = models.BooleanField(
+        default=True, verbose_name='Опубликовано',
     )
 
     class Meta:
@@ -92,10 +96,9 @@ class Post(BasePostModel):
     post_manager = PostManager()
     objects = models.Manager()
 
-    class Meta:
+    class Meta(BasePostModel.Meta):
         verbose_name = 'публикация'
         verbose_name_plural = 'Публикации'
-        ordering = ('-pub_date', )
 
     def __str__(self):
         return self.title
@@ -109,11 +112,13 @@ class Comment(models.Model):
         Post,
         on_delete=models.CASCADE,
         verbose_name='Пост',
+        related_name='comments'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         verbose_name='Автор комментария',
+        related_name='comments'
     )
     text = models.TextField(verbose_name='Комментарий')
     created_at = created_at = models.DateTimeField(
@@ -121,23 +126,10 @@ class Comment(models.Model):
         verbose_name='Добавлено',
     )
 
-    def get_absolute_url(self):
-        return reverse('blog:post_detail', kwargs={'post_id': self.post.pk})
-
     class Meta:
         verbose_name = 'комментарий'
         verbose_name_plural = 'Комментарии'
-        default_related_name = 'comments'
         ordering = ('created_at', )
 
-
-class Profile(models.Model):
-    profile = models.OneToOneField(User, on_delete=models.CASCADE)
-    post = models.ForeignKey(
-        Post,
-        on_delete=models.CASCADE,
-        verbose_name='Пост',
-    )
-
-    class Meta:
-        default_related_name = 'profile'
+    def get_absolute_url(self):
+        return reverse('blog:post_detail', kwargs={'post_id': self.post.pk})
