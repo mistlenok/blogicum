@@ -21,6 +21,10 @@ class BasePostModel(models.Model):
         auto_now_add=True,
         verbose_name='Добавлено',
     )
+    pub_date = models.DateTimeField(
+        verbose_name='Дата и время публикации',
+        null=True,
+    )
 
     class Meta:
         abstract = True

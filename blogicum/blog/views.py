@@ -1,10 +1,9 @@
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import Paginator
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
-from django.utils.timezone import now
 from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
                                   UpdateView)
 
@@ -33,16 +32,11 @@ class OnlyAuthorMixin(UserPassesTestMixin):
 class UnPublishedMixin:
     def get_object(self, queryset=None):
         pk = self.kwargs.get('post_id')
-        object = Post.objects.filter(
-            Q(pk=pk)
-            & (Q(is_published=False)
-               | Q(category__is_published=False)
-               | Q(pub_date__gt=now())
-               ))
-        if object:
-            if object[0].author == self.request.user:
-                return super().get_object(queryset=object)
-        return super().get_object(queryset)
+        object = Post.post_manager.filter(pk=pk)
+        if not object:
+            return get_object_or_404(
+                Post.objects.filter(pk=pk), author=self.request.user)
+        return super().get_object(queryset=object)
 
 
 class CommentMixin:
@@ -65,12 +59,12 @@ class UserDetailView(DetailView):
         user = self.get_object()
         if user == self.request.user:
             posts = Post.objects.filter(
-                author=self.request.user).order_by(
-                    '-pub_date').annotate(comment_count=Count('comments'))
+                author=self.request.user).annotate(
+                    comment_count=Count('comments')).order_by('-pub_date')
         else:
             posts = Post.post_manager.filter(
-                author=user).order_by('-pub_date').annotate(
-                    comment_count=Count('comments'))
+                author=user).annotate(
+                    comment_count=Count('comments')).order_by('-pub_date')
         page_number = self.request.GET.get('page')
         page_obj = paging_posts(posts, page_number, settings.MAX_POSTS)
         context['page_obj'] = page_obj
@@ -151,8 +145,8 @@ class CategoryPostsDetailView(LoginRequiredMixin, DetailView):
             Category, slug=self.kwargs['category'], is_published=True
         )
         posts = Post.post_manager.all().filter(
-            category=category).order_by(
-                '-pub_date').annotate(comment_count=Count('comments'))
+            category=category).annotate(
+                comment_count=Count('comments')).order_by('-pub_date')
         page_number = self.request.GET.get('page')
         page_obj = paging_posts(posts, page_number, settings.MAX_POSTS)
         context['page_obj'] = page_obj
@@ -179,7 +173,7 @@ class PostDeleteView(OnlyAuthorMixin, DeleteView):
         return context
 
     def get_success_url(self):
-        return reverse_lazy(
+        return reverse(
             'blog:profile',
             kwargs={'username': self.request.user.username}
         )
@@ -198,7 +192,7 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse_lazy(
+        return reverse(
             'blog:post_detail',
             kwargs={'post_id': self.kwargs[self.pk_url_kwarg]}
         )
