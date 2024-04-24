@@ -10,7 +10,7 @@ User = get_user_model()
 
 class BasePostModel(models.Model):
     """
-    Абстрактная модель. Добвляет флаг опубликовано,
+    Абстрактная модель. Добавляет флаг опубликовано,
     дату и время создания.
     """
 
@@ -21,14 +21,10 @@ class BasePostModel(models.Model):
         auto_now_add=True,
         verbose_name='Добавлено',
     )
-    pub_date = models.DateTimeField(
-        verbose_name='Дата и время публикации',
-        null=True,
-    )
 
     class Meta:
         abstract = True
-        ordering = ('-pub_date', )
+        ordering = ('created_at', )
 
 
 class Category(BasePostModel):
@@ -103,6 +99,7 @@ class Post(BasePostModel):
     class Meta(BasePostModel.Meta):
         verbose_name = 'публикация'
         verbose_name_plural = 'Публикации'
+        ordering = ('-pub_date',)
 
     def __str__(self):
         return self.title

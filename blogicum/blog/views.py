@@ -33,10 +33,10 @@ class UnPublishedMixin:
     def get_object(self, queryset=None):
         pk = self.kwargs.get('post_id')
         object = Post.post_manager.filter(pk=pk)
-        if not object:
-            return get_object_or_404(
-                Post.objects.filter(pk=pk), author=self.request.user)
-        return super().get_object(queryset=object)
+        if object.exists():
+            return super().get_object(queryset=object)
+        return get_object_or_404(
+            Post.objects.filter(pk=pk), author=self.request.user)
 
 
 class CommentMixin:
