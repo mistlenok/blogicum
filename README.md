@@ -60,3 +60,6 @@ python3 manage.py migrate
 ```
 python3 manage.py runserver
 ```
+## Автор
+
+[Татьяна Харченко](https://github.com/mistlenok)
